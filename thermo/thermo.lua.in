@@ -1,0 +1,35 @@
+gpio0 = 3
+rt_host = __RTCOA_HOST__
+ts_host = "api.thingspeak.com"
+api_key = __TS_API_KEY__
+
+ds18b20 = require('ds18b20')
+rtcoa = require('rtcoa')
+
+function updateThingSpeak(key, field, value)
+  local sk = net.createConnection(net.TCP, false)
+  sk:on("connection", function(s)
+    s:send("GET /update?key="..key.."&"..field.."="..value.." HTTP/1.1\r\nHost: "..ts_host.."\r\nAccept: */*\r\n\r\n")
+  end)
+  sk:on("receive", function(s, payload)
+    s:close()
+  end)
+  sk:connect(80, ts_host)
+end
+
+function updateTemp(pin)
+  local temp = ds18b20.read(nil, ds18b20.C)
+  local temp_f = ds18b20.read(nil, ds18b20.F)
+
+  if temp ~= nil then
+    print("Updating temperature reading: "..temp)
+    updateThingSpeak(api_key, "field1", temp)
+    rtcoa.open(rt_host)
+    rtcoa.set("remote_temp", { ["rem_temp"] = temp_f })
+  else
+    print("Bad temperature reading not posted")
+  end
+end
+
+ds18b20.setup(gpio0)
+tmr.alarm(0, 60000, 1, function() updateTemp(gpio0) end)

@@ -1,0 +1,15 @@
+wifi_essid = __WIFI_ESSID__;
+wifi_pass = __WIFI_PASS__;
+
+wifi.setmode(wifi.STATION);
+wifi.sta.config(wifi_essid, wifi_pass);
+
+tmr.alarm(1, 1000, 1, function() 
+  if wifi.sta.getip() == nil then 
+    print("Waiting for address...");
+  else 
+    tmr.stop(1);
+    print("Connected to: "..wifi_essid..", address: "..wifi.sta.getip());
+  end
+end);
+
