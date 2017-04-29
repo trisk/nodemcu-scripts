@@ -37,6 +37,8 @@ function handle_http(c, request)
 
   if handlers[path] ~= nil then
     handlers[path](c, params)
+  elseif handlers[path .. "/"] ~= nil then
+    handlers[path .. "/"](c, params)
   else
     send_page(c, 404, nil)
   end
