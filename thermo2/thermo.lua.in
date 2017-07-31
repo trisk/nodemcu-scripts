@@ -1,0 +1,30 @@
+gpio0 = 3
+dweet_host = "dweet.io"
+thing_name = "deadgerbil-living-room-sensors"
+ds18b20 = require('ds18b20')
+function dweet(thing, field, value)
+  local sk = net.createConnection(net.TCP, false)
+  sk:on("connection", function(s)
+    local val = "GET /dweet/for/"..thing.."?"..field.."="..value.." HTTP/1.1\r\nHost: "..dweet_host.."\r\nAccept: */*\r\n\r\n"
+    print(val)
+    s:send(val)
+  end)
+  sk:on("receive", function(s, payload)
+    s:close()
+    print(payload)
+  end)
+  sk:connect(80, dweet_host)
+end
+function updateTemp(pin)
+  local temp_f = ds18b20.read(nil, 'F', 10)
+  if (temp_f ~= nil and temp_f < 1850) then
+    local temp = ""..(temp_f / 10).."."..(temp_f % 10)
+    print("Updating temperature reading: "..temp)
+    dweet(thing_name, "temperature", temp)
+  else
+    print("Bad temperature reading")
+  end
+end
+ds18b20.setup(gpio0)
+ds18b20.read(nil, nil, nil) -- discard first read
+tmr.alarm(0, 60000, 1, function() updateTemp(gpio0) end)
